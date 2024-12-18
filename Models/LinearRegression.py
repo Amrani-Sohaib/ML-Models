@@ -27,15 +27,3 @@ class LinearRegression:
     def predict(self, X):
         return np.dot(X, self.weights) + self.bias
 
-if __name__ == "__main__":
-    # Données d'exemple
-    X = np.array([[1], [2], [3], [4], [5]])  # Variable indépendante
-    y = np.array([5, 7, 9, 11, 13])          # Variable dépendante
-
-    # Initialisation et entraînement du modèle
-    model = LinearRegression(learning_rate=0.01, n_iterations=1000)
-    model.fit(X, y)
-
-    # Test des prédictions
-    predictions = model.predict(X)
-    print(f"Predictions: {predictions}")
