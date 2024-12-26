@@ -1,12 +1,12 @@
 import numpy as np
 
-class GradientBoostingRegressor:
+class GradientBoostingClassifier:
     def __init__(self, n_estimators=100, learning_rate=0.1):
         """
-        Initialize the Gradient Boosting Regressor.
+        Initialize the Gradient Boosting Classifier.
 
         Parameters:
-        n_estimators (int): Number of boosting rounds (trees).
+        n_estimators (int): Number of boosting rounds (weak learners).
         learning_rate (float): Step size for weight updates.
         """
         self.n_estimators = n_estimators
@@ -16,55 +16,67 @@ class GradientBoostingRegressor:
 
     def _compute_residuals(self, y, y_pred):
         """
-        Compute the residuals between the true and predicted values.
+        Compute the residuals for classification as the negative gradient.
 
         Parameters:
-        y (np.ndarray): True target values.
-        y_pred (np.ndarray): Predicted target values.
+        y (np.ndarray): True class labels (0 or 1).
+        y_pred (np.ndarray): Predicted probabilities.
 
         Returns:
         np.ndarray: Residuals.
         """
         return y - y_pred
 
+    def _sigmoid(self, z):
+        """
+        Apply the sigmoid function.
+
+        Parameters:
+        z (np.ndarray): Input array.
+
+        Returns:
+        np.ndarray: Sigmoid output.
+        """
+        return 1 / (1 + np.exp(-z))
+
     def fit(self, X, y):
         """
-        Fit the Gradient Boosting Regressor to the training data.
+        Fit the Gradient Boosting Classifier to the training data.
 
         Parameters:
         X (np.ndarray): Feature matrix of shape (n_samples, n_features).
-        y (np.ndarray): Target vector of shape (n_samples,).
+        y (np.ndarray): Binary target vector of shape (n_samples,), where labels are 0 or 1.
         """
-        # Initialize prediction as the mean of the target values
-        self.initial_prediction = np.mean(y)
+        # Initialize predictions to the log-odds of the positive class
+        y_mean = np.mean(y)
+        self.initial_prediction = np.log(y_mean / (1 - y_mean))
         y_pred = np.full(y.shape, self.initial_prediction)
 
         for _ in range(self.n_estimators):
-            # Compute residuals
-            residuals = self._compute_residuals(y, y_pred)
+            # Compute probabilities and residuals
+            probabilities = self._sigmoid(y_pred)
+            residuals = self._compute_residuals(y, probabilities)
 
-            # Fit a simple regression tree (stump) to the residuals
-            tree = DecisionStump()
+            # Train a simple regression tree (stump) on the residuals
+            tree = DecisionStumpRegressor()
             tree.fit(X, residuals)
-            
-            # Predict the residuals
             residual_pred = tree.predict(X)
 
             # Update predictions
             y_pred += self.learning_rate * residual_pred
 
-            # Store the fitted tree
+            # Store the weak learner
             self.models.append(tree)
 
     def predict(self, X):
         """
-        Predict the target values for the given data.
+        Predict class labels for the given data.
 
         Parameters:
         X (np.ndarray): Feature matrix of shape (n_samples, n_features).
 
         Returns:
-        np.ndarray: Predicted target values of shape (n_samples,).
+        np.ndarray: Predicted class labels of shape (n_samples,).
         """
         # Start with the initial prediction
         y_pred = np.full(X.shape[0], self.initial_prediction)
@@ -73,12 +85,14 @@ class GradientBoostingRegressor:
         for tree in self.models:
             y_pred += self.learning_rate * tree.predict(X)
 
-        return y_pred
+        # Convert to class labels
+        probabilities = self._sigmoid(y_pred)
+        return (probabilities >= 0.5).astype(int)
 
-class DecisionStump:
+class DecisionStumpRegressor:
     def __init__(self):
         """
-        Initialize a simple decision stump.
+        Initialize a simple decision stump for regression.
         """
         self.feature_index = None
         self.threshold = None
@@ -139,17 +153,17 @@ class DecisionStump:
 # Example usage
 if __name__ == "__main__":
     # Example dataset
-    X_train = np.array([[1.0], [2.0], [3.0], [4.0], [5.0]])
-    y_train = np.array([1.2, 1.9, 3.2, 4.1, 5.0])
+    X_train = np.array([[1, 2], [2, 3], [3, 4], [4, 5], [5, 6]])
+    y_train = np.array([0, 0, 1, 1, 1])
 
-    X_test = np.array([[1.5], [3.5], [4.5]])
+    X_test = np.array([[1.5, 2.5], [3.5, 4.5], [4.5, 5.5]])
 
-    # Initialize the Gradient Boosting Regressor
-    gbr = GradientBoostingRegressor(n_estimators=10, learning_rate=0.1)
+    # Initialize the Gradient Boosting Classifier
+    gbc = GradientBoostingClassifier(n_estimators=10, learning_rate=0.1)
 
     # Fit the model
-    gbr.fit(X_train, y_train)
+    gbc.fit(X_train, y_train)
 
     # Predict on test data
-    predictions = gbr.predict(X_test)
+    predictions = gbc.predict(X_test)
     print("Predictions:", predictions)
