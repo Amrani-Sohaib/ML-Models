@@ -1,4 +1,4 @@
-from Models.knn_regressor import KNearestNeighborsRegressor
+from Models.KNeighborsRegressor import KNearestNeighborsRegressor
 import numpy as np
 
 

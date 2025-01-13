@@ -18,10 +18,7 @@ scipy
 joblib
 
 # Optional: Deep learning libraries (comment out if not needed)
-tensorflow==2.13.0
-keras==2.13.1
-torch==2.1.0
-torchvision==0.16.0
+
 
 # Optional: Data preprocessing
 openpyxl==3.1.2
